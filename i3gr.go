@@ -3,50 +3,25 @@ package main
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	"go.i3wm.org/i3/v4"
 )
 
 func main() {
+	tree, _ := i3.GetTree()
 	recv := i3.Subscribe(i3.WindowEventType)
+	set_width := fmt.Sprintf("resize set width %d px", int(float64(tree.Root.Rect.Width)*.618))
+	set_height := fmt.Sprintf("resize set height %d px", int(float64(tree.Root.Rect.Height)*.618))
 	for recv.Next() {
-		ev := recv.Event().(*i3.WindowEvent)
-		log.Printf("change: %s", ev.Change)
-		log.Printf("name: %s", ev.Container.Name)
+		_, err := i3.RunCommand(set_width)
+		if err != nil {
+			log.Printf("failed to set with: %s\n", err)
+		}
+		_, err = i3.RunCommand(set_height)
+		if err != nil {
+			log.Printf("failed to set height: %s\n", err)
+		}
 
 	}
 	log.Fatal(recv.Close())
-
-	// Focus or start Google Chrome on the focused workspace.
-	tree, err := i3.GetTree()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("TREE-NAME: %s\n", tree.Root.Name)
-
-	ws := tree.Root.FindFocused(func(n *i3.Node) bool {
-		return n.Type == i3.WorkspaceNode
-	})
-	if ws == nil {
-		log.Fatalf("could not locate workspace")
-	}
-
-	// res := ws.FindChild(func(n *i3.Node) bool {
-	// 	return strings.ContainsAny(n.Name, "emacs")
-	// })
-
-	chrome := ws.FindChild(func(n *i3.Node) bool {
-		return strings.ContainsAny(n.Name, "calibre")
-		// return strings.HasSuffix(n.Name, "- Emacs")
-	})
-
-	if chrome != nil {
-		_, err = i3.RunCommand(fmt.Sprintf(`[con_id="%d"] focus`, chrome.ID))
-	} else {
-		_, err = i3.RunCommand(`exec google-chrome`)
-	}
-	if err != nil {
-		log.Fatal(err)
-	}
 }
